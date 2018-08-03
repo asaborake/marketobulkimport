@@ -6,7 +6,7 @@ class Polling{
     public function doPoll($batchId){
 			try{
 				$config = new Config();
-				if(!isset($batchId)){throw new Exception("バッチIDを取得出来ていません");}
+				if(!isset($batchId)){throw new Exception("Error:BatchID getting failed");}
 				$tokenadmin = new TokenAdmin();
 				$access_token = $tokenadmin->getToken();
 				$result = $config->poll($access_token, $batchId, "status");

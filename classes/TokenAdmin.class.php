@@ -35,7 +35,7 @@ class TokenAdmin{
                 $to = new DateTime('now');
                 $interval = $to->diff($from)->format('%R');
             } else {
-                throw new Exception("トークンの有効期限が不明です");
+                throw new Exception("Error:Can't get token expiration value");
             }
 
             try{
@@ -45,7 +45,7 @@ class TokenAdmin{
                 throw new Exception($e->getMessage());
             }
         } else {
-            throw new Exception("token.jsonファイルがありません");
+            throw new Exception("Error:Token.json doesn't exist");
         }
     }
 }

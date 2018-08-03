@@ -5,7 +5,7 @@ require_once "classes/Config.class.php";
 class FailFileGetting{
     public function doFailFileGet($batchId, $file){
 		try{
-			if(!isset($batchId)){throw new Exception("バッチIDを取得出来ていません");}
+			if(!isset($batchId)){throw new Exception("Error:BatchID getting failed");}
 			$tokenadmin = new TokenAdmin();
 			$access_token = $tokenadmin->getToken();
 			$config = new Config();

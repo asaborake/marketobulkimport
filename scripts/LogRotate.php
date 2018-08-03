@@ -22,10 +22,10 @@ if(isset($filedate)){
     $import_error = $csv_path."ImportErrorReport.csv";
 
     try{
-        #CSVの存在チェック
+        #Check CSV file exist
         if(file_exists($usage)){
             if(file_exists($import_error)){
-                #エラーCSVを配列化したうえで通常CSVに追記する
+                #Error csv file converts to array and add normal csv file
                 $fp = fopen($import_error, "r");
                 $i = 0;
                 while (($data = fgetcsv($fp, 0, ",")) !== FALSE) {
@@ -46,41 +46,41 @@ if(isset($filedate)){
                 }
                 fclose($f);
 
-                #マージが完了したのでエラーCSVを削除する
+                #Delete error csv file
                 unlink($import_error);
             }
         } else {
-            throw new Exception("UsageReportファイルが見つかりません（LogRotate）");
+            throw new Exception("Error:CSV file for posting doesn't exist");
         }
 
-        #CSVファイルを送信
+        #Posting csv file
         $postData = new Posting();
         $res = $postData->doPost($usage);
         $log->makeLog("response",$res);
 
         if(!$res->success){
-            throw new Exception("ファイルのポストに失敗しました（LogRotate）");
+            throw new Exception("Error:CSV file posting failed");
         } else {
-            $resArr = $res->result[0]; #ポストした処理のIDを含む配列
+            $resArr = $res->result[0];
             do {
-                #ポーリング実施
+                #Polling
                 if(isset($resArr->batchId)){
                     $p = new Polling();
                     $r = $p->doPoll($resArr->batchId);
                     $log->makeLog("polling", $r);
                 } else {
-                    throw new Exception("バッチIDの取得に失敗しました（オブジェクト配列周り）");
+                    throw new Exception("Error:BatchId getting failed");
                 }
-                #Failedの際の終了処理
+                #Failed is finish
                 $f = $r->result[0]->status;
                 if($f == "Failed"){
-                    throw new Exception("ポーリングがFailedで終了しました"); #Failedでもループ終了
-                    break; #前でthrowしているので必要ないと思うが、念の為
+                    throw new Exception("Error:Polling is 'Failed' status");
+                    break;
                 }
                 sleep(60);
             } while ($f != "Complete");
 
-            #エラーCSV生成（エラーが含まれていた場合）
+            #Generate error CSV file
             if(isset($r->result[0]->numOfRowsFailed) && $r->result[0]->numOfRowsFailed >= 1){
                 $failfile = new FailFileGetting();
                 $resf = $failfile->doFailFileGet($r->result[0]->batchId, $import_error);
@@ -88,19 +88,19 @@ if(isset($filedate)){
                 $log->makeLog("getErrLog", $resf);
             }
         }
-        #結果ログ作成（success.logに１実行１行で書き込み）
+        #Generate success log
         $resSuccess = $log->makeLog("success", $r);
-        $flag = "success:APIへの書き込みが終わりました。詳細はsuccess.logを参考にしてください。 | ".$resSuccess;
+        $flag = "Success:Finished,if you'd like to know the detail of process, look at the 'success.log'. | ".$resSuccess;
     } catch(Exception $e){
-        #エラーログ作成（error.logに１実行1行で書き込み）
+        #Generate error log
         $resError = $log->makeLog("error", $e->getMessage());
-        $flag = "error:何らかの段階でエラーが発生しました。詳細はerror.logを参考にしてください。 | ".$resError;
+        $flag = "Error:Failed,if you'd like to know the detail of process, look at the 'error.log'. | ".$resError;
     }
 } else {
-    #エラーログ作成（error.logに１実行1行で書き込み）
-    $flag = "error:引数にyyyymmdd形式で日付を入れてください";
+    #Generate error log
+    $flag = "Error:Argument is yyyymmdd";
     $log->makeLog("error", $flag);
 }
-#終了ログ作成（result.logに１実行１行で書き込み。成功したか失敗したかを$flagを参照して記載）
+#Generate result log
 $log->makeLog("result", $flag);
 print_r($flag);
